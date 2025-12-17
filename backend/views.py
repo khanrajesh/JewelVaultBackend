@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 
 from backend.firebase.firebase import db
@@ -24,3 +24,7 @@ def list_users(request):
         return JsonResponse({"users": users})
     except Exception as exc:  # pragma: no cover - defensive logging surface
         return JsonResponse({"error": str(exc)}, status=500)
+
+
+def root_message(request):
+    return HttpResponse("Up and running boss!")

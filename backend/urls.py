@@ -17,10 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from backend.views import list_users, ping_view
+from backend.views import list_users, ping_view, root_message
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', root_message, name='root'),
     path('app/ping/', ping_view, name='ping'),
     path('app/users/', list_users, name='users'),
 
