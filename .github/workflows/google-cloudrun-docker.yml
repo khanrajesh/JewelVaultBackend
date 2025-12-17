@@ -59,7 +59,7 @@ jobs:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
       - name: 'Set up gcloud'
-        uses: 'google-github-actions/setup-gcloud@4c953307becb7c3d31f0db6f53b230166c4ace0d' # v2
+        uses: 'google-github-actions/setup-gcloud@v2'
         with:
           project_id: '${{ env.PROJECT_ID }}'
 
