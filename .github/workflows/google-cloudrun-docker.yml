@@ -38,7 +38,8 @@ env:
   PROJECT_ID: jewel-vault
   REGION: asia-south1
   SERVICE: jewelvaultbackend
-  IMAGE_NAME: gcr.io/jewel-vault/github.com/khanrajesh/jewelvaultbackend
+  REPOSITORY: jewelvaultbackend
+  IMAGE_NAME: asia-south1-docker.pkg.dev/jewel-vault/jewelvaultbackend/jewelvaultbackend
 
 jobs:
   deploy:
@@ -63,8 +64,8 @@ jobs:
         with:
           project_id: '${{ env.PROJECT_ID }}'
 
-      - name: 'Configure Docker auth for gcr.io'
-        run: gcloud auth configure-docker gcr.io --quiet
+      - name: 'Configure Docker auth for Artifact Registry'
+        run: gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
 
       - name: 'Build and Push Container'
         run: |-
