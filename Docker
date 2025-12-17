@@ -4,18 +4,23 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=backend.settings \
-    PORT=8080
+    PORT=8080 \
+    APP_HOME=/app
 
-WORKDIR /app
+# Create non-root user
+RUN addgroup --system app && adduser --system --ingroup app app
+
+WORKDIR ${APP_HOME}
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy project source
-COPY . .
+# Copy project source (owned by app user)
+COPY --chown=app:app . .
+
+USER app
 
 EXPOSE 8080
 
