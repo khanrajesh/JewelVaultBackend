@@ -82,10 +82,10 @@ jobs:
             echo "FIREBASE_SA_KEY GitHub secret is not set"; exit 1;
           fi
           echo "$FIREBASE_SA_KEY" > /tmp/firebase-sa.json
-          if ! gcloud secrets describe "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
-            gcloud secrets create "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" --replication-policy="automatic"
-          fi
-          gcloud secrets versions add "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" --data-file=/tmp/firebase-sa.json
+          gcloud secrets versions add "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" --data-file=/tmp/firebase-sa.json || {
+            echo "Failed to add secret version. Ensure secret '${FIREBASE_SECRET_NAME}' exists and the GitHub Actions service account has roles/secretmanager.secretVersionAdder (and viewer).";
+            exit 1;
+          }
 
       - id: 'deploy'
         name: 'Deploy to Cloud Run'
