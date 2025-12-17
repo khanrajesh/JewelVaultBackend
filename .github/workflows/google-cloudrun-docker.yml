@@ -40,6 +40,7 @@ env:
   SERVICE: jewelvaultbackend
   REPOSITORY: jewelvaultbackend
   IMAGE_NAME: asia-south1-docker.pkg.dev/jewel-vault/jewelvaultbackend/jewelvaultbackend
+  FIREBASE_SECRET_NAME: firebase-service-account
 
 jobs:
   deploy:
@@ -73,6 +74,19 @@ jobs:
           docker build --file Docker --tag "${DOCKER_TAG}" .
           docker push "${DOCKER_TAG}"
 
+      - name: 'Sync Firebase service account to Secret Manager'
+        env:
+          FIREBASE_SA_KEY: ${{ secrets.FIREBASE_SA_KEY }}
+        run: |-
+          if [ -z "$FIREBASE_SA_KEY" ]; then
+            echo "FIREBASE_SA_KEY GitHub secret is not set"; exit 1;
+          fi
+          echo "$FIREBASE_SA_KEY" > /tmp/firebase-sa.json
+          if ! gcloud secrets describe "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+            gcloud secrets create "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" --replication-policy="automatic"
+          fi
+          gcloud secrets versions add "${FIREBASE_SECRET_NAME}" --project "${PROJECT_ID}" --data-file=/tmp/firebase-sa.json
+
       - id: 'deploy'
         name: 'Deploy to Cloud Run'
         uses: 'google-github-actions/deploy-cloudrun@33553064113a37d688aa6937bacbdc481580be17' # google-github-actions/deploy-cloudrun@v2
@@ -80,6 +94,10 @@ jobs:
           service: '${{ env.SERVICE }}'
           region: '${{ env.REGION }}'
           image: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          env_vars: |
+            GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase/key.json
+          secrets: |
+            /secrets/firebase/key.json=${{ env.FIREBASE_SECRET_NAME }}:latest
 
       - name: 'Show output'
         run: echo ${{ steps.deploy.outputs.url }}
