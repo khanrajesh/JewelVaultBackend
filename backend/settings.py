@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -73,12 +74,33 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    _parsed_db_url = urlparse(DATABASE_URL)
+    _db_query = parse_qs(_parsed_db_url.query)
+    _db_options = {}
+    if 'sslmode' in _db_query:
+        _db_options['sslmode'] = _db_query['sslmode'][0]
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _parsed_db_url.path.lstrip('/'),
+            'USER': _parsed_db_url.username,
+            'PASSWORD': _parsed_db_url.password,
+            'HOST': _parsed_db_url.hostname,
+            'PORT': _parsed_db_url.port or 5432,
+            'OPTIONS': _db_options,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
