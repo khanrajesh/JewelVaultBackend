@@ -50,6 +50,38 @@
         }
       }
     },
+    "/master-db/create-tables/": {
+      "post": {
+        "summary": "Create master tables",
+        "description": "Creates or verifies all master data tables derived from the mobile Room entities and DAOs (users, store, category, sub_category, item, customer, orders, purchase, labels, etc.).",
+        "responses": {
+          "200": {
+            "description": "Creation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "db_vendor": { "type": "string", "example": "postgresql" },
+                    "tables": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "example": ["users", "user_additional_info", "store", "category", "sub_category", "item", "customer", "customer_khata_book", "customer_transaction", "order", "order_item", "exchange_item", "firm", "seller", "purchase_order", "purchase_order_item", "metal_exchange", "printer", "label_template", "label_element"]
+                    },
+                    "indexes": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "example": ["idx_store_userId", "idx_category_user_store", "idx_item_cat", "idx_order_item_order", "idx_purchase_order_seller", "idx_label_element_template"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault-samples/seed/": {
       "get": {
         "summary": "Seed vault samples",

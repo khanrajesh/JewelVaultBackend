@@ -22,6 +22,7 @@ from backend import docs
 urlpatterns = [
     path('docs/', docs.swagger_ui, name='swagger-ui'),
     path('openapi.json', docs.openapi_json, name='openapi-json'),
+    path('master-db/', include('backend.master_db_opration.urls')),
     # path('vaultadmin/', admin.site.urls),
     path('', include('backend.test.urls')),
 ]
