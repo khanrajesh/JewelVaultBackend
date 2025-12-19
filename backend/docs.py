@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 from django.http import HttpResponse, HttpResponseNotFound
 from django.urls import reverse
@@ -27,6 +28,11 @@ def swagger_ui(request):
     Uses the CDN-hosted swagger-ui bundle (no extra python deps).
     """
     schema_url = request.build_absolute_uri(reverse("openapi-json"))
+    forwarded_proto = request.META.get("HTTP_X_FORWARDED_PROTO")
+    if forwarded_proto in ("http", "https"):
+        parsed = urlparse(schema_url)
+        if parsed.scheme != forwarded_proto:
+            schema_url = urlunparse(parsed._replace(scheme=forwarded_proto))
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
