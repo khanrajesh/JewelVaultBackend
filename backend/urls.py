@@ -17,7 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from backend import docs
+
 urlpatterns = [
+    path('docs/', docs.swagger_ui, name='swagger-ui'),
+    path('openapi.json', docs.openapi_json, name='openapi-json'),
     # path('vaultadmin/', admin.site.urls),
     path('', include('backend.test.urls')),
 ]

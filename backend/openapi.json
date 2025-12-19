@@ -1,0 +1,136 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Jewel Vault Backend API",
+    "version": "1.0.0",
+    "description": "Static documentation for the demo/test endpoints."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Current server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root message",
+        "responses": {
+          "200": {
+            "description": "Plain text health message",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Up and running boss!"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping/": {
+      "get": {
+        "summary": "Ping",
+        "responses": {
+          "200": {
+            "description": "Simple JSON status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault-samples/seed/": {
+      "get": {
+        "summary": "Seed vault samples",
+        "description": "Creates table if missing and inserts sample rows.",
+        "responses": {
+          "200": {
+            "description": "Seed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "inserted": { "type": "integer", "example": 2 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault-samples/": {
+      "get": {
+        "summary": "List vault samples",
+        "responses": {
+          "200": {
+            "description": "List of sample rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "samples": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer", "example": 1 },
+                          "name": { "type": "string", "example": "Gold Ring" },
+                          "note": { "type": "string", "example": "Sample row for connectivity check" },
+                          "created_at": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/": {
+      "get": {
+        "summary": "List users (test collection)",
+        "responses": {
+          "200": {
+            "description": "List of Firestore documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "test": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "test_field": { "type": "string", "example": "ok connected" },
+                          "test": { "type": "string", "example": "document-id" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

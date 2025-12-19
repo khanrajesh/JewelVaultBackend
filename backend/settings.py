@@ -11,11 +11,38 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+from importlib import import_module
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_local_secrets():
+    """
+    When env vars are not provided (local runs), allow pulling values from
+    backend/config_sit.py without committing secrets. Any attribute in that
+    module is copied into the process environment if it is not already set.
+    """
+    try:
+        cfg = import_module('backend.config_sit')
+    except ModuleNotFoundError:
+        return
+
+    def _maybe_string(value):
+        if isinstance(value, (list, tuple)):
+            return value[0]
+        return value
+
+    for key in ('SECRET_KEY', 'DATABASE_URL', 'DEBUG', 'ALLOWED_HOSTS'):
+        if key not in os.environ and hasattr(cfg, key):
+            val = _maybe_string(getattr(cfg, key))
+            if val is not None:
+                os.environ[key] = str(val)
+
+
+_load_local_secrets()
 
 
 # Quick-start development settings - unsuitable for production
