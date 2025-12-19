@@ -1,7 +1,7 @@
 
 venv/
 backend/firebase/serviceAccountKey.json
+backend/config_sit.py
 __pycache__/
 *.pyc
 *.pyo
-backend/config_sit.py

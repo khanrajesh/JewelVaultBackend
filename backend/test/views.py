@@ -21,13 +21,13 @@ def list_users(request):
     Fetch all user documents from Firestore collection 'users'.
     """
     try:
-        docs = db.collection("users").stream()
+        docs = db.collection("test").stream()
         users = []
         for doc in docs:
             data = doc.to_dict() or {}
-            data["id"] = doc.id
+            data["test"] = doc.id
             users.append(data)
-        return JsonResponse({"users": users})
+        return JsonResponse({"test": users})
     except Exception as exc:  # pragma: no cover - defensive logging surface
         return JsonResponse({"error": str(exc)}, status=500)
 
