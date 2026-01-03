@@ -1,6 +1,6 @@
 from django.urls import path
 
-from backend.test.views import (
+from backend.api.v1.test.views import (
     list_users,
     list_vault_samples,
     ping_view,

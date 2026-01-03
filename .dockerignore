@@ -8,4 +8,4 @@ __pycache__
 *.swo
 db.sqlite3
 **/db.sqlite3
-backend/firebase/serviceAccountKey.json
+backend/integrations/firebase/serviceAccountKey.json
