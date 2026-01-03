@@ -67,8 +67,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # API Apps
-    # (Removed: users, store, inventory, health - only test remains)
     'backend.api.v1.test',
+    'backend.api.v1.metal_rate',
 ]
 
 MIDDLEWARE = [
