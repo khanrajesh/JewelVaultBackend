@@ -14,6 +14,9 @@ urlpatterns = [
     path('docs/', docs.swagger_ui, name='swagger-ui'),
     path('openapi.json', docs.openapi_json, name='openapi-json'),
     
+    # API Routes
+    path('metal-rate/', include('backend.api.v1.metal_rate.urls')),
+    
     # Legacy routes (DEPRECATED - for backward compatibility)
     # These endpoints are deprecated and will be removed in a future version
     # See API_MIGRATION_GUIDE.md for migration instructions

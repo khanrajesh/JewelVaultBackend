@@ -30,11 +30,7 @@ def success_response(data: Any = None, message: str = "Success", status_code: in
     Returns:
         JsonResponse with standardized format
     """
-    return JsonResponse({
-        "success": True,
-        "message": message,
-        "data": data
-    }, status=status_code)
+    return set(True, message=message, data=data, status_code=status_code)
 
 
 def error_response(message: str, data: Any = None, status_code: int = 400) -> JsonResponse:
@@ -49,11 +45,29 @@ def error_response(message: str, data: Any = None, status_code: int = 400) -> Js
     Returns:
         JsonResponse with standardized format
     """
-    return JsonResponse({
-        "success": False,
+    return set(False, message=message, data=data, status_code=status_code)
+
+
+def set(success: bool, message: str = "", data: Any = None, status_code: int = 200) -> JsonResponse:
+    """
+    Generic response wrapper used by success and error helpers.
+
+    Args:
+        success: Whether the response indicates success.
+        message: Human readable message.
+        data: Payload data.
+        status_code: HTTP status code.
+
+    Returns:
+        JsonResponse with standardized format.
+    """
+    payload = {
+        "success": bool(success),
         "message": message,
         "data": data
-    }, status=status_code)
+    }
+
+    return JsonResponse(payload, status=status_code)
 
 
 def pagination_params(request) -> Dict[str, int]:

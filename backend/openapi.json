@@ -16,6 +16,50 @@
     }
   ],
   "paths": {
+    "/metal-rate/": {
+      "get": {
+        "summary": "Get current metal rates (gold 24K and silver 1kg)",
+        "operationId": "metal_rate",
+        "description": "Scrapes real-time gold 24K and silver 1kg prices from multiple sources (GoodReturns, AngelOne)",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Indian state for regional rates (default: karnataka)",
+            "schema": {
+              "type": "string",
+              "default": "karnataka"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current gold 24K and silver 1kg rates from multiple sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string"},
+                    "timestamp": {"type": "string"},
+                    "rates": {
+                      "type": "object",
+                      "properties": {
+                        "gold_24k": {"type": "object"},
+                        "silver_1kg": {"type": "object"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error during scraping"
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root endpoint",
