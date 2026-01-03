@@ -2,7 +2,7 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET, require_http_methods
 
-from backend.firebase.firebase import db
+from backend.integrations.firebase.firebase_service import firebase_service
 
 
 @require_GET
@@ -18,10 +18,10 @@ def root_message(request):
 @require_GET
 def list_users(request):
     """
-    Fetch all user documents from Firestore collection 'users'.
+    Fetch all user documents from Firestore collection 'test'.
     """
     try:
-        docs = db.collection("test").stream()
+        docs = firebase_service.db.collection("test").stream()
         users = []
         for doc in docs:
             data = doc.to_dict() or {}
@@ -91,3 +91,14 @@ def seed_vault_samples(request):
         return JsonResponse({"status": "ok", "inserted": inserted})
     except Exception as exc:  # pragma: no cover - defensive logging surface
         return JsonResponse({"error": str(exc)}, status=500)
+"""
+Compatibility placeholder for moved `test` app.
+
+Original endpoints (health, inventory/store, user) were removed per request.
+This module intentionally does not expose those APIs.
+"""
+from django.http import JsonResponse
+
+
+def removed_endpoint(request):
+    return JsonResponse({"detail": "This endpoint has been removed"}, status=410)

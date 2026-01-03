@@ -1,131 +1,42 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.0.0",
   "info": {
-    "title": "Jewel Vault Backend API",
-    "version": "1.0.0",
-    "description": "Static documentation for the demo/test endpoints."
+    "title": "JewelVault Backend API",
+    "description": "RESTful API for JewelVault - Jewelry Management System (Legacy/Test Endpoints Only)",
+    "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "/",
-      "description": "Current server"
+      "url": "http://localhost:8000",
+      "description": "Development"
     }
   ],
   "paths": {
     "/": {
       "get": {
-        "summary": "Root message",
+        "summary": "Root endpoint",
+        "operationId": "root_message",
         "responses": {
           "200": {
-            "description": "Plain text health message",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "Up and running boss!"
-                }
-              }
-            }
+            "description": "Welcome message"
           }
         }
       }
     },
     "/ping/": {
       "get": {
-        "summary": "Ping",
+        "summary": "Health check",
+        "operationId": "ping_view",
         "responses": {
           "200": {
-            "description": "Simple JSON status",
+            "description": "Status OK",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string", "example": "ok" }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/master-db/create-tables/": {
-      "post": {
-        "summary": "Create master tables",
-        "description": "Creates or verifies all master data tables derived from the mobile Room entities and DAOs (users, store, category, sub_category, item, customer, orders, purchase, labels, etc.).",
-        "responses": {
-          "200": {
-            "description": "Creation result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "db_vendor": { "type": "string", "example": "postgresql" },
-                    "tables": {
-                      "type": "array",
-                      "items": { "type": "string" },
-                      "example": ["users", "user_additional_info", "store", "category", "sub_category", "item", "customer", "customer_khata_book", "customer_transaction", "order", "order_item", "exchange_item", "firm", "seller", "purchase_order", "purchase_order_item", "metal_exchange", "printer", "label_template", "label_element"]
-                    },
-                    "indexes": {
-                      "type": "array",
-                      "items": { "type": "string" },
-                      "example": ["idx_store_userId", "idx_category_user_store", "idx_item_cat", "idx_order_item_order", "idx_purchase_order_seller", "idx_label_element_template"]
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/vault-samples/seed/": {
-      "get": {
-        "summary": "Seed vault samples",
-        "description": "Creates table if missing and inserts sample rows.",
-        "responses": {
-          "200": {
-            "description": "Seed result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "inserted": { "type": "integer", "example": 2 }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/vault-samples/": {
-      "get": {
-        "summary": "List vault samples",
-        "responses": {
-          "200": {
-            "description": "List of sample rows",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "samples": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": { "type": "integer", "example": 1 },
-                          "name": { "type": "string", "example": "Gold Ring" },
-                          "note": { "type": "string", "example": "Sample row for connectivity check" },
-                          "created_at": { "type": "string", "format": "date-time" }
-                        }
-                      }
+                    "status": {
+                      "type": "string"
                     }
                   }
                 }
@@ -137,29 +48,42 @@
     },
     "/users/": {
       "get": {
-        "summary": "List users (test collection)",
+        "summary": "List users from Firestore",
+        "operationId": "list_users",
         "responses": {
           "200": {
-            "description": "List of Firestore documents",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "test": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "test_field": { "type": "string", "example": "ok connected" },
-                          "test": { "type": "string", "example": "document-id" }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+            "description": "List of users"
+          }
+        }
+      }
+    },
+    "/vault-samples/": {
+      "get": {
+        "summary": "List vault samples from PostgreSQL",
+        "operationId": "list_vault_samples",
+        "responses": {
+          "200": {
+            "description": "List of vault samples"
+          }
+        }
+      }
+    },
+    "/vault-samples/seed/": {
+      "get": {
+        "summary": "Get vault sample seed status",
+        "operationId": "get_seed",
+        "responses": {
+          "200": {
+            "description": "Seed status"
+          }
+        }
+      },
+      "post": {
+        "summary": "Seed vault samples table",
+        "operationId": "seed_vault_samples",
+        "responses": {
+          "200": {
+            "description": "Seed operation result"
           }
         }
       }

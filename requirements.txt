@@ -7,6 +7,8 @@ cffi==2.0.0
 charset-normalizer==3.4.4
 cryptography==46.0.3
 Django==6.0
+django-cors-headers==4.3.1
+djangorestframework==3.14.0
 firebase_admin==7.1.0
 google-api-core==2.28.1
 google-auth==2.43.0
@@ -40,3 +42,7 @@ typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.2
 gunicorn==22.0.0
+python-decouple==3.8
+celery==5.3.4
+redis==5.0.1
+Pillow==11.0.0

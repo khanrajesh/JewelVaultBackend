@@ -15,10 +15,18 @@ def openapi_json(request):
     """
     Serve the static OpenAPI schema used by Swagger UI.
     """
-    if not OPENAPI_PATH.exists():
-        return HttpResponseNotFound("openapi.json not found")
-    data = OPENAPI_PATH.read_text(encoding="utf-8")
-    return HttpResponse(data, content_type="application/json")
+    try:
+        if not OPENAPI_PATH.exists():
+            return HttpResponseNotFound("openapi.json not found")
+        # Use utf-8-sig to handle BOM if present
+        data = OPENAPI_PATH.read_text(encoding="utf-8-sig")
+        # Validate it's valid JSON
+        json.loads(data)
+        return HttpResponse(data, content_type="application/json")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return HttpResponse(f"Error reading openapi.json: {str(e)}", status=500)
 
 
 @require_GET

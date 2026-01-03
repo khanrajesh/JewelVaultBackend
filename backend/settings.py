@@ -66,6 +66,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # API Apps
+    # (Removed: users, store, inventory, health - only test remains)
+    'backend.api.v1.test',
 ]
 
 MIDDLEWARE = [
@@ -76,6 +79,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Custom middleware
+    'backend.core.middleware.ExceptionMiddleware',
+    'backend.core.middleware.CORSMiddleware',
+    'backend.core.middleware.LoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
