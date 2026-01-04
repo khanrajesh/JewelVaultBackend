@@ -9,17 +9,18 @@ from django.urls import include, path
 
 from backend import docs
 
+# Version prefix for API routes
+v1 = "api/v1"
+
 urlpatterns = [
     # API Documentation
-    path('docs/', docs.swagger_ui, name='swagger-ui'),
-    path('openapi.json', docs.openapi_json, name='openapi-json'),
+    path(f'{v1}/docs/', docs.swagger_ui, name='swagger-ui'),
+    path(f'{v1}/openapi.json', docs.openapi_json, name='openapi-json'),
     
     # API Routes
-    path('metal-rate/', include('backend.api.v1.metal_rate.urls')),
-    
-    # Legacy routes (DEPRECATED - for backward compatibility)
-    # These endpoints are deprecated and will be removed in a future version
-    # See API_MIGRATION_GUIDE.md for migration instructions
-    path('', include('backend.api.v1.test.urls')),  # Root endpoints (ping, /users/, etc.)
+    path(f'{v1}/', include('backend.api.v1.metal_rate.urls')),
+
+
+    path(f'{v1}/', include('backend.api.v1.test.urls')),  # Root endpoints (ping, /users/, etc.)
     path('master-db/', include('backend.api.v1.test.urls')),  # Master DB operations
 ]

@@ -16,7 +16,7 @@
     }
   ],
   "paths": {
-    "/metal-rate/": {
+    "/v1/metal-rate/": {
       "get": {
         "summary": "Get current metal rates (gold 24K per 10g, silver per 1kg)",
         "operationId": "metal_rate",
