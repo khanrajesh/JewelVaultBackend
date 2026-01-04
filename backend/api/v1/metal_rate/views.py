@@ -45,6 +45,34 @@ def parse_price(price_str: str) -> str:
     return m.group(0).replace(",", "")
 
 
+def extract_date_from_text(text: str):
+    """Return a datetime parsed from date strings like 'Rate on 15 December 2025'."""
+    m = re.search(r"(\d{1,2})\s*([A-Za-z]+)\s*(\d{4})", text)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(" ".join(m.groups()), "%d %B %Y")
+    except ValueError:
+        return None
+
+
+def get_table_headers_and_rows(table):
+    """Return (headers, data_rows) for tables that sometimes use <td> for headers."""
+    header_cells = table.find_all("th")
+    if header_cells:
+        headers = [cell.get_text(strip=True).lower() for cell in header_cells]
+        rows = table.find_all("tr")[1:]
+    else:
+        first_row = table.find("tr")
+        headers = (
+            [cell.get_text(strip=True).lower() for cell in first_row.find_all(["th", "td"])]
+            if first_row
+            else []
+        )
+        rows = table.find_all("tr")[1:] if first_row else table.find_all("tr")
+    return headers, rows
+
+
 def fetch_gold_24k_angel_one() -> dict:
     """
     Fetch gold 24K price from AngelOne website.
@@ -167,7 +195,9 @@ def fetch_gold_24k_good_returns() -> dict:
         try:
             logger.info(f"[GoodReturns Gold] Trying city: {city}")
             response = requests.get(url, headers=get_headers(), timeout=15)
-            response.raise_for_status()
+            if response.status_code != 200:
+                logger.warning(f"[GoodReturns Gold] {city} returned status {response.status_code}")
+                continue
 
             doc = BeautifulSoup(response.content, "html.parser")
             table = doc.find("table")
@@ -204,6 +234,7 @@ def fetch_gold_24k_good_returns() -> dict:
             continue
 
     logger.error("[GoodReturns Gold] All city attempts failed")
+
     return {
         "source": "GoodReturns",
         "metal": "Gold",
@@ -224,7 +255,9 @@ def fetch_silver_1kg_good_returns() -> dict:
         try:
             logger.info(f"[GoodReturns Silver] Trying city: {city}")
             response = requests.get(url, headers=get_headers(), timeout=15)
-            response.raise_for_status()
+            if response.status_code != 200:
+                logger.warning(f"[GoodReturns Silver] {city} returned status {response.status_code}")
+                continue
 
             doc = BeautifulSoup(response.content, "html.parser")
             table = doc.find("table")
@@ -263,6 +296,7 @@ def fetch_silver_1kg_good_returns() -> dict:
             continue
 
     logger.error("[GoodReturns Silver] All city attempts failed")
+
     return {
         "source": "GoodReturns",
         "metal": "Silver",
@@ -276,7 +310,7 @@ def fetch_silver_1kg_good_returns() -> dict:
 def fetch_gold_24k_bankbazaar() -> dict:
     """
     Fetch gold 24K price from BankBazaar gold rate page.
-    Returns the first matching 24K price found in the table.
+    Prefers the per-gram price in the Parameters table (latest dated row), with a city table fallback.
     """
     url = "https://www.bankbazaar.com/gold-rate-india.html"
     today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -286,27 +320,86 @@ def fetch_gold_24k_bankbazaar() -> dict:
         response.raise_for_status()
 
         doc = BeautifulSoup(response.content, "html.parser")
-        # BankBazaar table rows
-        rows = doc.select("table tr")
 
-        for row in rows:
-            cells = row.find_all("td")
-            if len(cells) >= 2:
-                label = cells[0].get_text(strip=True).lower()
-                price_text = cells[1].get_text(strip=True)
+        best_price = None
+        best_date = None
 
-                # Match “24K” or “24 carat” or similar
-                if "24" in label:
-                    price = parse_price(price_text)
-                    return {
-                        "source": "BankBazaar",
-                        "metal": "Gold",
-                        "caratOrPurity": "24K",
-                        "price": price,
-                        "updatedDate": today
-                    }
+        # Primary: parameters table with per-gram 24K price
+        for table in doc.find_all("table"):
+            headers, rows = get_table_headers_and_rows(table)
+            if not headers:
+                continue
+            if not any("gold price" in h and "24" in h for h in headers):
+                continue
 
-        # Not found
+            try:
+                price_idx = next(i for i, h in enumerate(headers) if "gold price" in h and "24" in h)
+            except StopIteration:
+                continue
+
+            for row in rows:
+                cells = row.find_all("td")
+                if len(cells) <= price_idx:
+                    continue
+
+                label = cells[0].get_text(" ", strip=True)
+                value_text = cells[price_idx].get_text(" ", strip=True)
+
+                if "gram" not in value_text.lower():
+                    continue
+
+                price = parse_price(value_text)
+                if not price:
+                    continue
+
+                row_date = extract_date_from_text(label)
+                if row_date and (best_date is None or row_date > best_date):
+                    best_date, best_price = row_date, price
+                elif best_price is None:
+                    best_price = price
+
+            if best_price:
+                break
+
+        # Fallback: city table that lists 24K price for N grams (usually 8g)
+        if not best_price:
+            for table in doc.find_all("table"):
+                headers, rows = get_table_headers_and_rows(table)
+                if not headers:
+                    continue
+
+                header_text = " ".join(headers)
+                if "24k gold rate" not in header_text:
+                    continue
+
+                gram_match = re.search(r"(\d+)\s*grams", header_text)
+                grams = int(gram_match.group(1)) if gram_match else 8
+
+                for row in rows:
+                    cells = row.find_all("td")
+                    if len(cells) >= 3:
+                        price_text = cells[2].get_text(" ", strip=True)
+                        price = parse_price(price_text)
+                        if price:
+                            try:
+                                per_gram = float(price) / grams
+                                best_price = str(round(per_gram, 2))
+                            except Exception:
+                                best_price = price
+                            break
+
+                if best_price:
+                    break
+
+        if best_price:
+            return {
+                "source": "BankBazaar",
+                "metal": "Gold",
+                "caratOrPurity": "24K",
+                "price": best_price,
+                "updatedDate": today
+            }
+
         return {
             "source": "BankBazaar",
             "metal": "Gold",
@@ -326,6 +419,7 @@ def fetch_gold_24k_bankbazaar() -> dict:
             "updatedDate": today
         }
 
+
 def fetch_silver_1kg_bankbazaar() -> dict:
     """
     Fetch silver 1kg price from BankBazaar silver rate page.
@@ -338,24 +432,74 @@ def fetch_silver_1kg_bankbazaar() -> dict:
         response.raise_for_status()
 
         doc = BeautifulSoup(response.content, "html.parser")
-        rows = doc.select("table tr")
+        best_price = None
+        best_date = None
 
-        for row in rows:
-            cells = row.find_all("td")
-            if len(cells) >= 2:
-                label = cells[0].get_text(strip=True).lower()
-                price_text = cells[1].get_text(strip=True)
+        # Primary: parameters table with per-kg silver price
+        for table in doc.find_all("table"):
+            headers, rows = get_table_headers_and_rows(table)
+            if not headers:
+                continue
+            if not any("silver price" in h and "kg" in h for h in headers):
+                continue
 
-                # Match “1 kg” or similar
-                if "kg" in label:
-                    price = parse_price(price_text)
-                    return {
-                        "source": "BankBazaar",
-                        "metal": "Silver",
-                        "caratOrPurity": "1 Kg",
-                        "price": price,
-                        "updatedDate": today
-                    }
+            for row in rows:
+                cells = row.find_all("td")
+                if len(cells) < 2:
+                    continue
+
+                label = cells[0].get_text(" ", strip=True)
+                value_text = cells[1].get_text(" ", strip=True)
+
+                if "rate of silver on" not in label.lower():
+                    continue
+
+                price = parse_price(value_text)
+                if not price:
+                    continue
+
+                row_date = extract_date_from_text(label)
+                if row_date and (best_date is None or row_date > best_date):
+                    best_date, best_price = row_date, price
+                elif best_price is None:
+                    best_price = price
+
+            if best_price:
+                break
+
+        # Fallback: city table with price per 10 grams -> scale to 1kg
+        if not best_price:
+            for table in doc.find_all("table"):
+                headers, rows = get_table_headers_and_rows(table)
+                if not headers:
+                    continue
+                if not any("price per 10 grams" in h for h in headers):
+                    continue
+
+                for row in rows:
+                    cells = row.find_all("td")
+                    if len(cells) >= 2:
+                        price_text = cells[1].get_text(" ", strip=True)
+                        price_10g = parse_price(price_text)
+                        if price_10g:
+                            try:
+                                price_kg = float(price_10g) * 100
+                                best_price = str(round(price_kg, 2))
+                            except Exception:
+                                best_price = price_10g
+                            break
+
+                if best_price:
+                    break
+
+        if best_price:
+            return {
+                "source": "BankBazaar",
+                "metal": "Silver",
+                "caratOrPurity": "1 Kg",
+                "price": best_price,
+                "updatedDate": today
+            }
 
         return {
             "source": "BankBazaar",
@@ -385,9 +529,9 @@ def metal_rate(request):
         gold_angel_one = fetch_gold_24k_angel_one()
         silver_angel_one = fetch_silver_1kg_angel_one()
 
-        silver_good_returns = fetch_silver_1kg_good_returns()
-        gold_good_returns = fetch_gold_24k_good_returns()
-
+        # gold_good_returns = fetch_gold_24k_good_returns()
+        # silver_good_returns = fetch_silver_1kg_good_returns()
+        
         gold_bankbazaar = fetch_gold_24k_bankbazaar()
         silver_bankbazaar = fetch_silver_1kg_bankbazaar()
         
@@ -396,13 +540,9 @@ def metal_rate(request):
             valid = [s for s in sources if s.get("price") not in (None, "", "0")]
             return valid[0] if valid else None
 
-        # compute simplified response values
-        # gold_best = get_best_rate([gold_good_returns, gold_angel_one])
-        # silver_best = get_best_rate([silver_good_returns, silver_angel_one])
-
-          # compute simplified response values
-        gold_best = get_best_rate([ gold_bankbazaar,gold_good_returns,gold_angel_one])
-        silver_best = get_best_rate([ silver_bankbazaar,silver_angel_one,silver_good_returns])
+        # compute simplified response values using all sources
+        gold_best = get_best_rate([gold_bankbazaar, gold_angel_one])
+        silver_best = get_best_rate([silver_bankbazaar, silver_angel_one])
 
         # if not gold_best:
         #     logger.error(f"No valid gold price from sources. GoodReturns: {gold_good_returns.get('error')}, AngelOne: {gold_angel_one.get('error')}")
@@ -437,11 +577,21 @@ def metal_rate(request):
 
         payload = {
             "timestamp": datetime.now().isoformat(),
-            "gold_24k_10gm": gold_10gm,
-            "silver_1kg": silver_1kg,
+            "rates": [
+                {
+                    "metal": "gold",
+                    "unit_gm": 10,
+                    "price": gold_10gm,
+                },
+                {
+                    "metal": "silver",
+                    "unit_gm": 1000,
+                    "price": silver_1kg,
+                },
+            ],
         }
 
-        logger.info(f"Computed rates - gold_24k_10gm: {gold_10gm}, silver_1kg: {silver_1kg}")
+        logger.info(f"Computed rates payload: {payload}")
 
         return set_response(True, data=payload, status_code=200)
     except Exception as e:
@@ -449,8 +599,10 @@ def metal_rate(request):
         # on unexpected error return nulls as requested
         err_payload = {
             "timestamp": datetime.now().isoformat(),
-            "gold_24k_10gm": None,
-            "silver_1kg": None,
+            "rates": [
+                {"metal": "gold", "unit_gm": 10, "price": None},
+                {"metal": "silver", "unit_gm": 1000, "price": None},
+            ],
         }
         return set_response(False, message=str(e), data=err_payload, status_code=500)
 
