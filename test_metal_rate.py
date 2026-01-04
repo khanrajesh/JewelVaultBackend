@@ -8,7 +8,7 @@ from django.test import Client
 import json
 
 client = Client()
-resp = client.get('/metal-rate/?state=karnataka')
+resp = client.get('/v1/metal-rate/?state=karnataka')
 try:
     data = json.loads(resp.content.decode('utf-8'))
     print(json.dumps(data, indent=2, default=str))
