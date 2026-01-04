@@ -18,44 +18,82 @@
   "paths": {
     "/metal-rate/": {
       "get": {
-        "summary": "Get current metal rates (gold 24K and silver 1kg)",
+        "summary": "Get current metal rates (gold 24K per 10g, silver per 1kg)",
         "operationId": "metal_rate",
-        "description": "Scrapes real-time gold 24K and silver 1kg prices from multiple sources (GoodReturns, AngelOne)",
-        "parameters": [
-          {
-            "name": "state",
-            "in": "query",
-            "description": "Indian state for regional rates (default: karnataka)",
-            "schema": {
-              "type": "string",
-              "default": "karnataka"
-            }
-          }
-        ],
+        "description": "Selects the first valid price aggregated from BankBazaar, GoodReturns, and AngelOne. Returns a compact list of metals with unit size and price.",
         "responses": {
           "200": {
-            "description": "Current gold 24K and silver 1kg rates from multiple sources",
+            "description": "Current metal rates",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {"type": "string"},
-                    "timestamp": {"type": "string"},
-                    "rates": {
+                    "success": {"type": "boolean"},
+                    "message": {"type": "string"},
+                    "data": {
                       "type": "object",
                       "properties": {
-                        "gold_24k": {"type": "object"},
-                        "silver_1kg": {"type": "object"}
+                        "timestamp": {"type": "string", "format": "date-time"},
+                        "rates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "metal": {"type": "string", "example": "gold"},
+                              "unit_gm": {"type": "number", "example": 10},
+                              "price": {"type": "number", "nullable": true, "example": 135530.0}
+                            }
+                          }
+                        }
                       }
                     }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "message": "",
+                  "data": {
+                    "timestamp": "2026-01-04T15:55:13.981992",
+                    "rates": [
+                      {"metal": "gold", "unit_gm": 10, "price": 135530.0},
+                      {"metal": "silver", "unit_gm": 1000, "price": 240000.0}
+                    ]
                   }
                 }
               }
             }
           },
           "500": {
-            "description": "Server error during scraping"
+            "description": "Server error during scraping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {"type": "boolean"},
+                    "message": {"type": "string"},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "timestamp": {"type": "string", "format": "date-time"},
+                        "rates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "metal": {"type": "string"},
+                              "unit_gm": {"type": "number"},
+                              "price": {"type": "number", "nullable": true}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
