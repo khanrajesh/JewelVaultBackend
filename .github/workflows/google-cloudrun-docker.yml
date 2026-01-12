@@ -41,7 +41,6 @@ env:
   REPOSITORY: jewelvaultbackend
   IMAGE_NAME: asia-south1-docker.pkg.dev/jewel-vault/jewelvaultbackend/jewelvaultbackend
   FIREBASE_SECRET_NAME: firebase-service-account
-  DATABASE_URL_SECRET_NAME: database-url
 
 jobs:
   deploy:
@@ -88,19 +87,6 @@ jobs:
             exit 1;
           }
 
-      - name: 'Sync Database URL to Secret Manager'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |-
-          if [ -z "$DATABASE_URL" ]; then
-            echo "DATABASE_URL GitHub secret is not set"; exit 1;
-          fi
-          printf "%s" "$DATABASE_URL" > /tmp/database-url.txt
-          gcloud secrets versions add "${DATABASE_URL_SECRET_NAME}" --project "${PROJECT_ID}" --data-file=/tmp/database-url.txt || {
-            echo "Failed to add secret version. Ensure secret '${DATABASE_URL_SECRET_NAME}' exists and the GitHub Actions service account has roles/secretmanager.secretVersionAdder (and viewer).";
-            exit 1;
-          }
-
       - id: 'deploy'
         name: 'Deploy to Cloud Run'
         uses: 'google-github-actions/deploy-cloudrun@33553064113a37d688aa6937bacbdc481580be17' # google-github-actions/deploy-cloudrun@v2
@@ -110,9 +96,9 @@ jobs:
           image: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
           env_vars: |
             GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase/key.json
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
           secrets: |
             /secrets/firebase/key.json=${{ env.FIREBASE_SECRET_NAME }}:latest
-            DATABASE_URL=${{ env.DATABASE_URL_SECRET_NAME }}:latest
 
       - name: 'Show output'
         run: echo ${{ steps.deploy.outputs.url }}
