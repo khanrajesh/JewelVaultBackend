@@ -1,31 +1,10 @@
-# This workflow build and push a Docker container to Google Artifact Registry
-# and deploy it on Cloud Run when a commit is pushed to the "master"
-# branch.
+# This workflow builds and pushes a Docker container to Google Artifact Registry
+# and deploys it on Cloud Run when a commit is pushed to the "master" branch.
 #
-# To configure this workflow:
-#
-# 1. Enable the following Google Cloud APIs:
-#
-#    - Artifact Registry (artifactregistry.googleapis.com)
-#    - Cloud Run (run.googleapis.com)
-#    - IAM Credentials API (iamcredentials.googleapis.com)
-#
-#    You can learn more about enabling APIs at
-#    https://support.google.com/googleapi/answer/6158841.
-#
-# 2. Create and configure a Workload Identity Provider for GitHub:
-#    https://github.com/google-github-actions/auth#preferred-direct-workload-identity-federation.
-#
-#    Depending on how you authenticate, you will need to grant an IAM principal
-#    permissions on Google Cloud:
-#
-#    - Artifact Registry Administrator (roles/artifactregistry.admin)
-#    - Cloud Run Developer (roles/run.developer)
-#
-#    You can learn more about setting IAM permissions at
-#    https://cloud.google.com/iam/docs/manage-access-other-resources
-#
-# 3. Change the values in the "env" block to match your values.
+# Configure:
+# 1. Enable required Google Cloud APIs (Artifact Registry, Cloud Run, IAM Credentials).
+# 2. Configure Workload Identity / credentials for GitHub Actions.
+# 3. Set repo secret GCP_SA_KEY, FIREBASE_SA_KEY. Set DATABASE_URL as either a secret or variable.
 
 name: 'Build and Deploy to Cloud Run'
 
@@ -87,6 +66,23 @@ jobs:
             exit 1;
           }
 
+      - name: 'Resolve DATABASE_URL (secret or variable)'
+        env:
+          DB_URL_VAR: ${{ vars.DATABASE_URL }}
+        run: |-
+          DB_URL="${DB_URL_VAR}"
+          if [ -z "$DB_URL" ]; then
+            echo "DATABASE_URL is not set; add it under Settings -> Variables."
+            exit 1
+          fi
+          echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+
+      - name: 'Remove legacy DATABASE_URL secret binding if present'
+        run: |-
+          gcloud run services update "${SERVICE}" \
+            --region "${REGION}" \
+            --remove-secrets DATABASE_URL || true
+
       - id: 'deploy'
         name: 'Deploy to Cloud Run'
         uses: 'google-github-actions/deploy-cloudrun@33553064113a37d688aa6937bacbdc481580be17' # google-github-actions/deploy-cloudrun@v2
@@ -96,7 +92,7 @@ jobs:
           image: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
           env_vars: |
             GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase/key.json
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            DATABASE_URL=${{ env.DATABASE_URL }}
           secrets: |
             /secrets/firebase/key.json=${{ env.FIREBASE_SECRET_NAME }}:latest
 
