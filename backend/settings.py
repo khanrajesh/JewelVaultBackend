@@ -112,22 +112,34 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     _parsed_db_url = urlparse(DATABASE_URL)
-    _db_query = parse_qs(_parsed_db_url.query)
-    _db_options = {}
-    if 'sslmode' in _db_query:
-        _db_options['sslmode'] = _db_query['sslmode'][0]
 
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': _parsed_db_url.path.lstrip('/'),
-            'USER': _parsed_db_url.username,
-            'PASSWORD': _parsed_db_url.password,
-            'HOST': _parsed_db_url.hostname,
-            'PORT': _parsed_db_url.port or 5432,
-            'OPTIONS': _db_options,
+    if _parsed_db_url.scheme in ('sqlite', 'sqlite3'):
+        _db_path = _parsed_db_url.path.lstrip('/') or 'db.sqlite3'
+        if not os.path.isabs(_db_path):
+            _db_path = BASE_DIR / _db_path
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': _db_path,
+            }
         }
-    }
+    else:
+        _db_query = parse_qs(_parsed_db_url.query)
+        _db_options = {}
+        if 'sslmode' in _db_query:
+            _db_options['sslmode'] = _db_query['sslmode'][0]
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': _parsed_db_url.path.lstrip('/'),
+                'USER': _parsed_db_url.username,
+                'PASSWORD': _parsed_db_url.password,
+                'HOST': _parsed_db_url.hostname,
+                'PORT': _parsed_db_url.port or 5432,
+                'OPTIONS': _db_options,
+            }
+        }
 else:
     DATABASES = {
         'default': {

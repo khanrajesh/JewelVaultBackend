@@ -5,6 +5,54 @@ from django.views.decorators.http import require_GET, require_http_methods
 from backend.integrations.firebase.firebase_service import firebase_service
 
 
+def _ensure_vault_samples_table(cursor):
+    if connection.vendor == "postgresql":
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS vault_samples (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                note TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+            """
+        )
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS vault_samples (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                note TEXT,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+
+def _insert_sample_rows(cursor):
+    if connection.vendor == "postgresql":
+        cursor.execute(
+            """
+            INSERT INTO vault_samples (name, note)
+            VALUES
+                ('Gold Ring', 'Sample row for connectivity check'),
+                ('Silver Necklace', 'Second sample row')
+            ON CONFLICT (name) DO NOTHING
+            """
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO vault_samples (name, note)
+            VALUES
+                ('Gold Ring', 'Sample row for connectivity check'),
+                ('Silver Necklace', 'Second sample row')
+            """
+        )
+    return cursor.rowcount
+
+
 @require_GET
 def ping_view(request):
     return JsonResponse({"status": "ok"})
@@ -39,6 +87,7 @@ def list_vault_samples(request):
     """
     try:
         with connection.cursor() as cursor:
+            _ensure_vault_samples_table(cursor)
             cursor.execute(
                 """
                 SELECT id, name, note, created_at
@@ -68,26 +117,8 @@ def seed_vault_samples(request):
     """
     try:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS vault_samples (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT NOT NULL UNIQUE,
-                    note TEXT,
-                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                )
-                """
-            )
-            cursor.execute(
-                """
-                INSERT INTO vault_samples (name, note)
-                VALUES
-                    ('Gold Ring', 'Sample row for connectivity check'),
-                    ('Silver Necklace', 'Second sample row')
-                ON CONFLICT (name) DO NOTHING
-                """
-            )
-            inserted = cursor.rowcount
+            _ensure_vault_samples_table(cursor)
+            inserted = _insert_sample_rows(cursor)
         return JsonResponse({"status": "ok", "inserted": inserted})
     except Exception as exc:  # pragma: no cover - defensive logging surface
         return JsonResponse({"error": str(exc)}, status=500)
